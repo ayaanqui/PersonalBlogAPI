@@ -6,19 +6,12 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from posts.api.serializers import PostSummarySerializer, PostDetailSerializer
 from posts.models import Post
 from tags.models import Tag
+from posts.api.pagination import SmallResultsSetPagination
+
 
 class PostListAPIView(ListAPIView):
     serializer_class = PostSummarySerializer
     queryset = Post.objects.all()
-
-    def paginationAlgo(self, qs, limit, pageNum):
-        maxPages = math.ceil(qs.count() / limit) # Gives us the max amount each page can have
-        if pageNum > maxPages:
-            return qs
-
-        min = (pageNum-1) * limit
-        max = min + limit
-        return qs[min : max]
 
     def get_queryset(self):
         qs = Post.objects.all()
@@ -34,22 +27,19 @@ class PostListAPIView(ListAPIView):
                 Q(tags = tagSearch)
             ).distinct()
         
+        # Pagination - sets pagination_class to show pagination view
+        # provided pagination is True
+        paginationStatus = self.request.GET.get('pagination')
+        if paginationStatus is not None and paginationStatus == 'True':
+            self.pagination_class = SmallResultsSetPagination
+
         orderBy = self.request.GET.get('order_by')
-        if orderBy is not None:
-            if (orderBy == 'published'):
-                qs = qs.order_by('published').reverse()
+        if orderBy is not None and orderBy == 'published':
+            qs = qs.order_by('published').reverse()
 
         limit = self.request.GET.get('limit')
         if limit is not None and limit.isnumeric():
-            limit = int(limit)
-
-            # Pagination -- works only if limit is provided
-            page = self.request.GET.get('page')
-            if page is not None and page.isnumeric():
-                page = int(page)
-                qs = self.paginationAlgo(qs, limit, page)
-            else:
-                qs = qs[:limit]
+            qs = qs[:int(limit)]
 
         return qs
 
