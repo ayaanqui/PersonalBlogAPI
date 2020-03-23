@@ -7,7 +7,7 @@ class Post(models.Model):
     title = models.CharField(max_length=150)
     slug = models.SlugField(max_length=150*2, blank=True)
     content = models.TextField()
-    image = models.ImageField(upload_to='images')
+    image = models.ImageField(upload_to='images', blank=True)
     published = models.DateTimeField()
     tags = models.ManyToManyField(Tag)
     modified = models.DateTimeField(blank=True, null=True)
